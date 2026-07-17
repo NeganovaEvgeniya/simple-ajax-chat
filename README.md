@@ -16,6 +16,7 @@
 ## Технологический стек
 - **Backend:** Python, Flask
 - **Frontend:** HTML, CSS, JavaScript (jQuery)
+- **Библиотеки:** jQuery (для манипуляций с DOM и выполнения AJAX-запросов)
 - **Обмен данными:** AJAX (POST/GET запросы)
 
 ## Как запустить проект
