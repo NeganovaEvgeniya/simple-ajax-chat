@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <style>
+            #container { width: 800px; display: flex; flex-direction: column; }
+            .message { width:70%; margin: 5px 0; padding: 10px; border-radius: 10px;}
+            .message.me { align-self: flex-start; background-color: lightblue; }
+            .message.companion {  align-self: flex-end; background-color: lightyellow; }
+            .close { float: right; }
+            .author { font-weight: bolder; text-decoration: underline; }
+            textarea { width: 70%; height: 75px; padding: 10px; margin: 15px 0 5px 0; border-radius: 10px; }
+            button {border-radius: 5px; padding: 5px; margin: 5px; vertical-align: middle;}
+            .close span.opened{ display: inline; }
+            .close span.closed{ display: none; }
+            .close.message-closed span.opened{ display: none; }
+            .close.message-closed span.closed{ display: inline; }
+            .new-msg { color:red; }
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.js"></script>
+        <script>
+            const personName = 'Марина';
+            $(function() {
+                let closeContainer = $('<div class="close"></div>')
+                    .append('<span class="opened">X</span>')
+                    .append('<span class="closed">V</span>');
+                // Функция для оформления структуры сообщения: добавляет кнопку закрытия и оборачивает контент
+                let decorateMessage = function(element) {
+                    element = $(element);
+                    element.prepend(closeContainer.clone())
+                        .find('.text')
+                        .wrapAll('<div class="content"></div>');
+                    return element;
+                }
+                
+                $('.message').each((idx, node) => decorateMessage(node));
+                // Делегирование события для обработки кликов по кнопке закрытия внутри динамически созданных сообщений
+                $('#container').on('click', '.close', function(event) {
+                    $(this).closest('.message')
+                        .find('.content').slideToggle().end()
+                        .find('.close').toggleClass('message-closed');
+                });
+                // Фабрика создания HTML-структуры сообщения
+                function createMessage(messageText, author) {
+                    let authorClass = (author == personName) ? 'me' : 'companion'
+                    let message = $('<div></div>').addClass('message').addClass(authorClass);
+                    $('<div></div>').addClass('author').appendTo(message).html(`<span class="new-msg">${author}</span>`);
+                    $('<div></div>').addClass('text').appendTo(message).text(messageText);
+                    decorateMessage(message);
+                    return message;
+                }
+
+                $('#reply').on('submit', function(event){
+                    event.preventDefault();
+                    let messageInput = $('form#reply [name="message"]');
+                    let messageText = messageInput.val();
+                    let messageFormData = new FormData($('#reply')[0]);
+                    messageFormData.append('author', personName);
+                    let messageData = Object.fromEntries(messageFormData.entries());
+                    // Отправка сообщения на сервер
+                    $.post('http://127.0.0.1:5000/send_message', messageData, function(response) {
+                        console.log('there');
+                        console.log(response);
+                    });
+
+                    messageInput.val('');
+                })
+
+                $('#load_messages').on('click', function(event) {
+                    // Запрос истории сообщений
+                    $.get('http://127.0.0.1:5000/messages', function(data) {
+                        data = JSON.parse(data)
+                        for(let messageData of data) {
+                            $('#container').append( createMessage(messageData.text, messageData.author) );
+                        }
+                    });
+                })
+            });
+        </script>
+    </head>
+
+    <body>
+        <div id="container">
+        </div>
+
+        <form id="reply" method="post">
+            <textarea type="text" name="message"></textarea><br/>
+            <button type="submit">Отправить</button>
+        </form>
+
+        <button id="load_messages">Load messages</button>
+    </body>
+</html>
